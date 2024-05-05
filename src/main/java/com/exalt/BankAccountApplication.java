@@ -1,9 +1,10 @@
-package com.exalt.bankaccount;
+package com.exalt;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
+
 public class BankAccountApplication {
 
 	public static void main(String[] args) {
