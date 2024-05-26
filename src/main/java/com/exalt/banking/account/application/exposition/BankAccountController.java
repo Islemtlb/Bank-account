@@ -13,6 +13,7 @@ import com.exalt.banking.account.application.model.BankAccountCreationRequest;
 import com.exalt.banking.account.application.model.OperationCreationRequest;
 import com.exalt.banking.account.application.service.AccountApplicationService;
 import com.exalt.banking.account.domain.exceptions.AccountNotFoundException;
+import com.exalt.banking.account.domain.exceptions.DepositCeilingExceededException;
 import com.exalt.banking.account.domain.exceptions.InsufficientFundsException;
 import jakarta.validation.Valid;
 
@@ -48,6 +49,11 @@ public class BankAccountController {
 
     @ExceptionHandler(InsufficientFundsException.class)
     public ResponseEntity<String> handleInsufficientFundsException(InsufficientFundsException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(DepositCeilingExceededException.class)
+    public ResponseEntity<String> handleDepositCeilingExceededException(DepositCeilingExceededException ex) {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 

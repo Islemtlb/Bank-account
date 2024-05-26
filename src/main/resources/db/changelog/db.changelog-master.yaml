@@ -19,7 +19,16 @@ databaseChangeLog:
                   name: overdraft_limit
                   type: decimal(19, 2)
                   constraints:
-                    nullable: false
+                    nullable: true
+              - column:
+                  name: account_type
+                  type: varchar(255) 
+              - column:
+                  name: savings_deposit_limit
+                  type: decimal(19, 2)
+                  constraints:
+                    nullable: true
+                   
               - column:
                   name: version
                   type: bigint

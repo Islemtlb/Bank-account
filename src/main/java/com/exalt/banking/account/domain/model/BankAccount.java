@@ -1,9 +1,7 @@
 package com.exalt.banking.account.domain.model;
 
+import com.exalt.banking.account.domain.exceptions.DepositCeilingExceededException;
 import com.exalt.banking.account.domain.exceptions.InsufficientFundsException;
-
-import jakarta.validation.constraints.NotNull;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +12,8 @@ public class BankAccount {
     private Long id;
     private BigDecimal balance;
     private BigDecimal overdraftLimit;
+    private BankAccountType accountType;
+    private BigDecimal savingsDepositLimit;
     private List<Operation> operations = new ArrayList<>();
     private Long version;
 
@@ -23,9 +23,12 @@ public class BankAccount {
         this.overdraftLimit = overdraftLimit;
     }
 
-    public BankAccount(@NotNull BigDecimal balance, @NotNull BigDecimal overdraftLimit) {
+    public BankAccount(BigDecimal balance, BigDecimal overdraftLimit, BankAccountType accountType,
+            BigDecimal savingsDepositLimit) {
         this.balance = balance;
         this.overdraftLimit = overdraftLimit;
+        this.accountType = accountType;
+        this.savingsDepositLimit = savingsDepositLimit;
     }
 
     public void withdraw(BigDecimal amount) {
@@ -37,8 +40,12 @@ public class BankAccount {
     }
 
     public void deposit(BigDecimal amount) {
+        if (accountType == BankAccountType.SAVINGS && balance.add(amount).compareTo(savingsDepositLimit) > 0) {
+            throw new DepositCeilingExceededException("Dépassement du plafond de dépôt autorisé.");
+        }
         balance = balance.add(amount);
         operations.add(new Operation(OperationType.CREDIT, amount));
+
     }
 
     @Override
@@ -49,12 +56,14 @@ public class BankAccount {
             return false;
         BankAccount that = (BankAccount) o;
         return Objects.equals(balance, that.balance) &&
-                Objects.equals(overdraftLimit, that.overdraftLimit);
+                Objects.equals(overdraftLimit, that.overdraftLimit) &&
+                accountType == that.accountType &&
+                Objects.equals(savingsDepositLimit, that.savingsDepositLimit);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(balance, overdraftLimit);
+        return Objects.hash(balance, overdraftLimit, accountType, savingsDepositLimit);
     }
 
     public Long getId() {
@@ -79,6 +88,22 @@ public class BankAccount {
 
     public void setOverdraftLimit(BigDecimal overdraftLimit) {
         this.overdraftLimit = overdraftLimit;
+    }
+
+    public BankAccountType getAccountType() {
+        return accountType;
+    }
+
+    public void setAccountType(BankAccountType accountType) {
+        this.accountType = accountType;
+    }
+
+    public BigDecimal getSavingsDepositLimit() {
+        return savingsDepositLimit;
+    }
+
+    public void setSavingsDepositLimit(BigDecimal savingsDepositLimit) {
+        this.savingsDepositLimit = savingsDepositLimit;
     }
 
     public List<Operation> getOperations() {

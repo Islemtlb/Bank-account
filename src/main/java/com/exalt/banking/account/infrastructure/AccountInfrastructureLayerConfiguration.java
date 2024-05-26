@@ -13,7 +13,7 @@ import com.exalt.banking.account.infrastructure.db.jpa.repository.JpaOperationRe
 import com.exalt.banking.account.infrastructure.db.jpa.repository.OperationRepositoryAdaptor;
 
 @Configuration
-public class InfastructureLayerConfiguration {
+public class AccountInfrastructureLayerConfiguration {
 
     @Bean
     AccountService accountService(AccountRepository accountRepository) {
@@ -21,8 +21,8 @@ public class InfastructureLayerConfiguration {
     }
 
     @Bean
-    AccountRepository accountPort(JpaAccountRepository accountRepository) {
-        return new AccountRepositoryAdaptor(accountRepository);
+    AccountRepository accountRepository(JpaAccountRepository jpaAccountRepository) {
+        return new AccountRepositoryAdaptor(jpaAccountRepository);
     }
 
     @Bean

@@ -2,6 +2,8 @@ package com.exalt.banking.account.application.exposition;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,7 +76,6 @@ class BankAccountControllerIT {
 
                 given()
                                 .contentType(ContentType.JSON)
-                                .header("Accept-Language", "en")
                                 .body(invalidJson)
                                 .when()
                                 .post("/accounts")
@@ -97,7 +98,8 @@ class BankAccountControllerIT {
                                 .post("/accounts")
                                 .then()
                                 .statusCode(HttpStatus.BAD_REQUEST.value())
-                                .body("overdraftLimit", equalTo("doit être supérieur ou égal à 0.0"));
+                                .body("overdraftLimit", equalTo(
+                                                "Le plafond de découvert est requis et doit être supérieur à 0 pour créer un compte COURANT"));
         }
 
         @Test
@@ -116,7 +118,22 @@ class BankAccountControllerIT {
         }
 
         @Test
-        void createAccount_without_overdraft_limit_should_return_bad_request() throws IOException {
+        void createAccount_without_type_should_return_bad_request_with_error_message() throws IOException {
+                String invalidJson = readJsonFile(
+                                "src/test/resources/bank-account-creation-request-without-type.json");
+
+                given()
+                                .contentType(ContentType.JSON)
+                                .body(invalidJson)
+                                .when()
+                                .post("/accounts")
+                                .then()
+                                .statusCode(HttpStatus.BAD_REQUEST.value())
+                                .body("accountType", equalTo("ne doit pas être nul"));
+        }
+
+        @Test
+        void createAccount_without_overdraft_limit_should_return_bad_request_when_type_is_current() throws IOException {
                 String invalidJson = readJsonFile(
                                 "src/test/resources/valid-bank-account-creation-request-without-overdraft-limit.json");
 
@@ -127,7 +144,8 @@ class BankAccountControllerIT {
                                 .post("/accounts")
                                 .then()
                                 .statusCode(HttpStatus.BAD_REQUEST.value())
-                                .body("overdraftLimit", equalTo("ne doit pas être nul"));
+                                .body("overdraftLimit", equalTo(
+                                                "Le plafond de découvert est requis et doit être supérieur à 0 pour créer un compte COURANT"));
 
         }
 
@@ -155,8 +173,96 @@ class BankAccountControllerIT {
                                 .statusCode(HttpStatus.CREATED.value());
 
                 BankAccount createdAccount = service.getAccount(accountId);
-                assertEquals(createdAccount.getOperations().size(), 1);
+                assertEquals(1, createdAccount.getOperations().size());
 
+        }
+
+        @Test
+        void createAccount_with_empty_json_body_should_return_bad_request_with_error_message() throws IOException {
+                // Arrange
+                String expectedErrorMessage = "{\"balance\":\"ne doit pas être nul\",\"accountType\":\"ne doit pas être nul\"}";
+                String accountJson = readJsonFile(
+                                "src/test/resources/bank-account-creation-request-with-empty-body-request.json");
+
+                // Act
+                Response response = given()
+                                .contentType(ContentType.JSON)
+                                .body(accountJson)
+                                .when()
+                                .post("/accounts");
+
+                // Assert
+                response.then()
+                                .statusCode(HttpStatus.BAD_REQUEST.value())
+                                .body(equalTo(expectedErrorMessage));
+        }
+
+        @Test
+        void createAccount_current_with_negative_balance_should_return_bad_request_with_error_message()
+                        throws IOException {
+                String invalidJson = readJsonFile(
+                                "src/test/resources/bank-current-account-creation-request-with-negative-balance.json");
+
+                given()
+                                .contentType(ContentType.JSON)
+                                .body(invalidJson)
+                                .when()
+                                .post("/accounts")
+                                .then()
+                                .statusCode(HttpStatus.BAD_REQUEST.value())
+                                .body("overdraftLimit", equalTo(
+                                                "Le plafond de découvert est requis et doit être supérieur à 0 pour créer un compte COURANT"));
+        }
+
+        @Test
+        void createAccount_savings_with_negative_balance_should_return_bad_request_with_error_message()
+                        throws IOException {
+                String invalidJson = readJsonFile(
+                                "src/test/resources/bank-savings-account-creation-request-with-negative-balance.json");
+
+                given()
+                                .contentType(ContentType.JSON)
+                                .body(invalidJson)
+                                .when()
+                                .post("/accounts")
+                                .then()
+                                .statusCode(HttpStatus.BAD_REQUEST.value())
+                                .body("savingsDepositLimit", equalTo(
+                                                "Le plafond de dépôt est requis et doit être supérieur à 0 pour créer un compte d'épargne"));
+        }
+
+        @Test
+        void createAccount_savings_with_balance_exceeding_deposit_limit_should_return_bad_request_with_error_message()
+                        throws IOException {
+                String invalidJson = readJsonFile(
+                                "src/test/resources/bank-savings-account-request-creation-with-balance-exceeding-deposit-limit.json");
+
+                given()
+                                .contentType(ContentType.JSON)
+                                .body(invalidJson)
+                                .when()
+                                .post("/accounts")
+                                .then()
+                                .statusCode(HttpStatus.BAD_REQUEST.value())
+                                .body("balance", equalTo(
+                                                "La balance ne doit pas dépasser le plafond de dépôt"));
+        }
+
+        @Test
+        void createAccount_current_with_negative_balance_and_negative_overdraft_limit_should_return_bad_request_with_error_message()
+                        throws IOException {
+                String invalidJson = readJsonFile(
+                                "src/test/resources/bank-current-account-creation-request-with-negative-balance-and-negative-overdraft-limit.json");
+
+                given()
+                                .contentType(ContentType.JSON)
+                                .body(invalidJson)
+                                .when()
+                                .post("/accounts")
+                                .then()
+                                .statusCode(HttpStatus.BAD_REQUEST.value())
+                                .body("overdraftLimit", equalTo(
+                                                "Le plafond de découvert est requis et doit être supérieur à 0 pour créer un compte COURANT"));
         }
 
         private BigDecimal getExpectedBigDecimalFromJson(String json, String key)
@@ -178,4 +284,5 @@ class BankAccountControllerIT {
         private String createSampleOperationJson(OperationType type, BigDecimal amount) {
                 return String.format("{\"type\":\"%s\",\"amount\":%s}", type.name(), amount);
         }
+
 }

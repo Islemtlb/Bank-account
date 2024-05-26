@@ -2,6 +2,7 @@ package com.exalt.banking.account.infrastructure.db.jpa.mapper;
 
 import org.junit.jupiter.api.Test;
 import com.exalt.banking.account.domain.model.BankAccount;
+import com.exalt.banking.account.domain.model.BankAccountType;
 import com.exalt.banking.account.infrastructure.db.jpa.entity.BankAccountEntity;
 import com.exalt.banking.account.infrastructure.db.mapper.BankAccountMapper;
 
@@ -16,13 +17,20 @@ class BankAccountMapperTest {
         // Given
         BigDecimal balance = new BigDecimal("100.00");
         BigDecimal overdraftLimit = new BigDecimal("50.00");
-        BankAccountEntity entity = new BankAccountEntity(balance, overdraftLimit);
+        String accountType = "CURRENT";
+        BigDecimal savingsDepositLimit = new BigDecimal("200.00");
+
+        BankAccountEntity entity = new BankAccountEntity(balance, overdraftLimit, accountType, savingsDepositLimit);
+
+        // When
         BankAccount account = BankAccountMapper.toDomain(entity);
 
         // Then
         assertThat(account).isNotNull();
         assertThat(account.getBalance()).isEqualByComparingTo(balance);
         assertThat(account.getOverdraftLimit()).isEqualByComparingTo(overdraftLimit);
+        assertThat(account.getAccountType()).isEqualTo(BankAccountType.CURRENT);
+        assertThat(account.getSavingsDepositLimit()).isEqualByComparingTo(savingsDepositLimit);
     }
 
     @Test
@@ -39,13 +47,20 @@ class BankAccountMapperTest {
         // Given
         BigDecimal balance = new BigDecimal("100.00");
         BigDecimal overdraftLimit = new BigDecimal("50.00");
-        BankAccount account = new BankAccount(1L, balance, overdraftLimit);
+        BankAccountType accountType = BankAccountType.CURRENT;
+        BigDecimal savingsDepositLimit = new BigDecimal("200.00");
+
+        BankAccount account = new BankAccount(balance, overdraftLimit, accountType, savingsDepositLimit);
+
+        // When
         BankAccountEntity entity = BankAccountMapper.toEntity(account);
 
         // Then
         assertThat(entity).isNotNull();
         assertThat(entity.getBalance()).isEqualByComparingTo(balance);
         assertThat(entity.getOverdraftLimit()).isEqualByComparingTo(overdraftLimit);
+        assertThat(entity.getAccountType()).isEqualTo(accountType.name());
+        assertThat(entity.getSavingsDepositLimit()).isEqualByComparingTo(savingsDepositLimit);
     }
 
     @Test
@@ -56,5 +71,4 @@ class BankAccountMapperTest {
         // Then
         assertThat(entity).isNull();
     }
-
 }

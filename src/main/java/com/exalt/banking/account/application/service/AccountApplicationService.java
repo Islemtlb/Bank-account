@@ -3,12 +3,15 @@ package com.exalt.banking.account.application.service;
 import com.exalt.banking.account.domain.model.BankAccount;
 import com.exalt.banking.account.domain.model.Operation;
 import com.exalt.banking.account.domain.service.AccountService;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AccountApplicationService {
 
+    @Autowired
     private final AccountService accountService;
 
     public AccountApplicationService(AccountService accountService) {

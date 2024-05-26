@@ -7,86 +7,107 @@ import java.math.BigDecimal;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.exalt.banking.account.domain.exceptions.InsufficientFundsException;
-import com.exalt.banking.account.domain.model.BankAccount;
 
 @ExtendWith(MockitoExtension.class)
 class BankAccountEntityTest {
 
     @Test
-    void deposit_should_add_amount_to_balance() {
+    void equals_should_return_true_for_same_object() {
         // Given
-        BankAccount account = new BankAccount(1L, BigDecimal.valueOf(50), BigDecimal.valueOf(50));
-        BigDecimal depositAmount = BigDecimal.valueOf(75);
+        BankAccountEntity entity = new BankAccountEntity(BigDecimal.TEN, BigDecimal.ZERO, "CURRENT", BigDecimal.ZERO);
 
         // When
-        account.deposit(depositAmount);
+        boolean result = entity.equals(entity);
 
         // Then
-        assertEquals(BigDecimal.valueOf(125), account.getBalance());
+        assertTrue(result);
     }
 
     @Test
-    void withdraw_should_throw_InsufficientFundsException_when_amount_exceeds_balance_and_overdraft() {
+    void equals_should_return_false_for_null() {
         // Given
-        BankAccount account = new BankAccount(1L, BigDecimal.valueOf(100), BigDecimal.valueOf(50));
-        BigDecimal withdrawalAmount = BigDecimal.valueOf(175);
+        BankAccountEntity entity = new BankAccountEntity(BigDecimal.TEN, BigDecimal.ZERO, "CURRENT", BigDecimal.ZERO);
 
         // When
-        assertThrows(InsufficientFundsException.class, () -> account.withdraw(withdrawalAmount));
+        boolean result = entity.equals(null);
 
         // Then
-        assertEquals(BigDecimal.valueOf(100), account.getBalance());
+        assertFalse(result);
     }
 
     @Test
-    void withdraw_should_deduct_amount_from_balance_and_overdraft_when_sufficient_funds() {
+    void equals_should_return_false_for_different_class() {
         // Given
-        BankAccount account = new BankAccount(1L, BigDecimal.valueOf(100), BigDecimal.valueOf(50));
-        BigDecimal withdrawalAmount = BigDecimal.valueOf(125);
+        BankAccountEntity entity = new BankAccountEntity(BigDecimal.TEN, BigDecimal.ZERO, "CURRENT", BigDecimal.ZERO);
+        Object otherObject = new Object();
 
         // When
-        account.withdraw(withdrawalAmount);
+        boolean result = entity.equals(otherObject);
 
         // Then
-        assertEquals(BigDecimal.valueOf(-25), account.getBalance());
+        assertFalse(result);
     }
 
     @Test
-    void withdraw_should_not_deduct_from_overdraft_when_balance_is_sufficient() {
+    void equals_should_return_false_for_different_ids() {
         // Given
-        BankAccount account = new BankAccount(1L, BigDecimal.valueOf(200), BigDecimal.valueOf(100));
-        BigDecimal withdrawalAmount = BigDecimal.valueOf(150);
+        BankAccountEntity entity1 = new BankAccountEntity(BigDecimal.TEN, BigDecimal.ZERO, "CURRENT", BigDecimal.ZERO);
+        entity1.setId(1L);
+        BankAccountEntity entity2 = new BankAccountEntity(BigDecimal.TEN, BigDecimal.ZERO, "CURRENT", BigDecimal.ZERO);
+        entity2.setId(2L);
 
         // When
-        account.withdraw(withdrawalAmount);
+        boolean result = entity1.equals(entity2);
 
         // Then
-        assertEquals(BigDecimal.valueOf(50), account.getBalance());
-        assertEquals(BigDecimal.valueOf(100), account.getOverdraftLimit());
+        assertFalse(result);
     }
 
-    @ParameterizedTest
-    @CsvSource({
-            "true, 100.0, 50.0, 100.0, 50.0",
-            "false, 100.0, 50.0, 200.0, 50.0",
-            "false, 100.0, 50.0, 100.0, 60.0",
-    })
-    void equals_and_hashCode_should_work_correctly(boolean expectedEquals, BigDecimal balance1, BigDecimal overdraft1,
-            BigDecimal balance2, BigDecimal overdraft2) {
+    @Test
+    void equals_should_return_true_for_same_ids() {
         // Given
-        BankAccount account1 = new BankAccount(1L, balance1, overdraft1);
-        BankAccount account2 = new BankAccount(1L, balance2, overdraft2);
+        BankAccountEntity entity1 = new BankAccountEntity(BigDecimal.TEN, BigDecimal.ZERO, "CURRENT", BigDecimal.ZERO);
+        entity1.setId(1L);
+        BankAccountEntity entity2 = new BankAccountEntity(BigDecimal.TEN, BigDecimal.ZERO, "CURRENT", BigDecimal.ZERO);
+        entity2.setId(1L);
+
+        // When
+        boolean result = entity1.equals(entity2);
 
         // Then
-        assertEquals(expectedEquals, account1.equals(account2));
-        if (expectedEquals) {
-            assertEquals(account1.hashCode(), account2.hashCode());
-        }
+        assertTrue(result);
     }
 
+    @Test
+    void hashCode_should_be_equal_for_same_ids() {
+        // Given
+        BankAccountEntity entity1 = new BankAccountEntity(BigDecimal.TEN, BigDecimal.ZERO, "CURRENT", BigDecimal.ZERO);
+        entity1.setId(1L);
+        BankAccountEntity entity2 = new BankAccountEntity(BigDecimal.TEN, BigDecimal.ZERO, "CURRENT", BigDecimal.ZERO);
+        entity2.setId(1L);
+
+        // When
+        int hash1 = entity1.hashCode();
+        int hash2 = entity2.hashCode();
+
+        // Then
+        assertEquals(hash1, hash2);
+    }
+
+    @Test
+    void hashCode_should_not_be_equal_for_different_ids() {
+        // Given
+        BankAccountEntity entity1 = new BankAccountEntity(BigDecimal.TEN, BigDecimal.ZERO, "CURRENT", BigDecimal.ZERO);
+        entity1.setId(1L);
+        BankAccountEntity entity2 = new BankAccountEntity(BigDecimal.TEN, BigDecimal.ZERO, "CURRENT", BigDecimal.ZERO);
+        entity2.setId(2L);
+
+        // When
+        int hash1 = entity1.hashCode();
+        int hash2 = entity2.hashCode();
+
+        // Then
+        assertNotEquals(hash1, hash2);
+    }
 }

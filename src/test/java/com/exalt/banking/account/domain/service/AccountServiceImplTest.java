@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.exalt.banking.account.domain.exceptions.AccountNotFoundException;
 import com.exalt.banking.account.domain.exceptions.InsufficientFundsException;
 import com.exalt.banking.account.domain.model.BankAccount;
+import com.exalt.banking.account.domain.model.BankAccountType;
 import com.exalt.banking.account.domain.model.Operation;
 import com.exalt.banking.account.domain.model.OperationType;
 import com.exalt.banking.account.domain.ports.AccountRepository;
@@ -109,7 +110,8 @@ class AccountServiceImplTest {
     void createAccount_should_create_account_and_return_id_when_creation_is_successful() {
         // Given
         Long expectedId = 1L;
-        BankAccount accountToCreate = new BankAccount(1L, BigDecimal.valueOf(1000), BigDecimal.valueOf(1000));
+        BankAccount accountToCreate = new BankAccount(BigDecimal.valueOf(1000), BigDecimal.valueOf(1000),
+                BankAccountType.CURRENT, BigDecimal.valueOf(2000));
         when(accountPort.createAccount(accountToCreate)).thenReturn(expectedId);
 
         // When

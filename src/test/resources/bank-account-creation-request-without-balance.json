@@ -1,3 +1,5 @@
 {
-    "overdraftLimit": 500.0
+    "overdraftLimit": 500.0,
+    "accountType": "CURRENT",
+    "savingsDepositLimit": 1000.0
 }  

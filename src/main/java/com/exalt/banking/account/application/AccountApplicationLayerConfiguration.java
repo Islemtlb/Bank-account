@@ -7,7 +7,7 @@ import com.exalt.banking.account.application.service.AccountApplicationService;
 import com.exalt.banking.account.domain.service.AccountService;
 
 @Configuration
-public class ApplicationLayerConfiguration {
+public class AccountApplicationLayerConfiguration {
 
     @Bean
     AccountApplicationService accountApplicationService(AccountService accountService) {
