@@ -15,6 +15,7 @@ public final class OperationMapper {
         }
         Operation operation = new Operation(entity.getType(), entity.getAmount());
         operation.setId(entity.getId());
+        operation.setDate(entity.getDate());
         return operation;
     }
 
@@ -25,6 +26,7 @@ public final class OperationMapper {
         OperationEntity operationEntity = new OperationEntity(operation.getType(), operation.getAmount(),
                 bankAccountEntity);
         operationEntity.setId(operation.getId());
+        operationEntity.setDate(operation.getDate());
         return operationEntity;
     }
 }

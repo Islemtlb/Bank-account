@@ -3,6 +3,7 @@ package com.exalt.banking.account.application.exposition;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +16,8 @@ import com.exalt.banking.account.application.service.AccountApplicationService;
 import com.exalt.banking.account.domain.exceptions.AccountNotFoundException;
 import com.exalt.banking.account.domain.exceptions.DepositCeilingExceededException;
 import com.exalt.banking.account.domain.exceptions.InsufficientFundsException;
+import com.exalt.banking.account.domain.model.AccountStatement;
+
 import jakarta.validation.Valid;
 
 @RestController
@@ -40,6 +43,12 @@ public class BankAccountController {
             @RequestBody @Valid OperationCreationRequest operationCreationRequest) {
         accountApplicationService.addOperation(id, operationCreationRequest.toOperation());
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping("/{accountId}/statement")
+    public ResponseEntity<AccountStatement> getMonthlyStatement(@PathVariable Long accountId) {
+        AccountStatement statement = accountApplicationService.generateMonthlyStatement(accountId);
+        return ResponseEntity.ok(statement);
     }
 
     @ExceptionHandler(AccountNotFoundException.class)

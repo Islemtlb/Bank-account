@@ -4,6 +4,8 @@ import com.exalt.banking.account.domain.model.OperationType;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Objects;
 
 @Entity
 @Table(name = "OPERATION")
@@ -22,6 +24,8 @@ public class OperationEntity {
     @Column(nullable = false)
     private Long version = 0L;
 
+    private Instant date;
+
     @ManyToOne
     @JoinColumn(name = "account_id")
     private BankAccountEntity bankAccount;
@@ -38,6 +42,26 @@ public class OperationEntity {
     public OperationEntity(OperationType type, BigDecimal amount) {
         this.type = type;
         this.amount = amount;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        OperationEntity that = (OperationEntity) o;
+        return Objects.equals(id, that.id) &&
+                Objects.equals(type, that.type) &&
+                Objects.equals(amount, that.amount) &&
+                Objects.equals(version, that.version) &&
+                Objects.equals(date, that.date) &&
+                Objects.equals(bankAccount, that.bankAccount);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, type, amount, version, date, bankAccount);
     }
 
     public Long getId() {
@@ -70,5 +94,13 @@ public class OperationEntity {
 
     public void setBankAccount(BankAccountEntity bankAccount) {
         this.bankAccount = bankAccount;
+    }
+
+    public Instant getDate() {
+        return date;
+    }
+
+    public void setDate(Instant date) {
+        this.date = date;
     }
 }

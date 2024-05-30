@@ -69,6 +69,11 @@ databaseChangeLog:
                   constraints:
                     nullable: false
                     defaultValue: 0
+              - column:
+                  name: date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
         - addForeignKeyConstraint:
             baseTableName: operation
             baseColumnNames: account_id

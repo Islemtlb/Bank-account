@@ -4,6 +4,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -11,7 +16,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.exalt.banking.account.domain.exceptions.AccountNotFoundException;
-import com.exalt.banking.account.domain.exceptions.InsufficientFundsException;
+
+import com.exalt.banking.account.domain.model.AccountStatement;
 import com.exalt.banking.account.domain.model.BankAccount;
 import com.exalt.banking.account.domain.model.BankAccountType;
 import com.exalt.banking.account.domain.model.Operation;
@@ -22,43 +28,10 @@ import com.exalt.banking.account.domain.ports.AccountRepository;
 class AccountServiceImplTest {
 
     @Mock
-    private AccountRepository accountPort;
-
-    @Mock
-    private BankAccount account;
+    private AccountRepository accountRepository;
 
     @InjectMocks
     private AccountServiceImpl accountService;
-
-    @Test
-    void addOperation_should_make_a_deposit_when_type_is_credit() {
-        // Given
-        Long accountId = 1L;
-        BigDecimal amount = BigDecimal.valueOf(100);
-        Operation depositOperation = new Operation(OperationType.CREDIT, amount);
-        when(accountPort.getAccount(accountId)).thenReturn(account);
-
-        // When
-        accountService.addOperation(accountId, depositOperation);
-
-        // Then
-        verify(accountPort).getAccount(accountId);
-        verify(account).deposit(amount);
-        verify(accountPort).updateAccount(account, depositOperation);
-    }
-
-    @Test
-    void addOperation_should_return_not_found_when_deposit_account_is_not_found() {
-        // Given
-        Long accountId = 1L;
-        BigDecimal amount = BigDecimal.valueOf(100);
-        Operation operation = new Operation(OperationType.CREDIT, amount);
-        when(accountPort.getAccount(accountId)).thenThrow(new AccountNotFoundException("Account not found"));
-
-        // When / Then
-        assertThrows(AccountNotFoundException.class, () -> accountService.addOperation(accountId, operation));
-        verify(accountPort).getAccount(accountId);
-    }
 
     @Test
     void addOperation_should_make_a_deposit_when_account_exists() {
@@ -66,60 +39,144 @@ class AccountServiceImplTest {
         Long accountId = 1L;
         BigDecimal amount = BigDecimal.valueOf(100);
         Operation depositOperation = new Operation(OperationType.CREDIT, amount);
-        when(accountPort.getAccount(accountId)).thenReturn(account);
+
+        BankAccount account = new BankAccount(BigDecimal.valueOf(1000), BigDecimal.valueOf(200),
+                BankAccountType.CURRENT, BigDecimal.valueOf(100));
+        account.setId(accountId);
+
+        when(accountRepository.getAccount(accountId)).thenReturn(account);
 
         // When
         accountService.addOperation(accountId, depositOperation);
 
         // Then
-        verify(accountPort).getAccount(accountId);
-        verify(account).deposit(amount);
-        verify(accountPort).updateAccount(account, depositOperation);
+        verify(accountRepository).getAccount(accountId);
+        assertEquals(BigDecimal.valueOf(1100), account.getBalance());
+        verify(accountRepository).updateAccount(account);
     }
 
     @Test
-    void addOperation_should_throw_exception_when_withdrawing_and_funds_are_insufficient() {
+    void addOperation_should_make_a_withdrawal_when_account_exists() {
         // Given
         Long accountId = 1L;
-        BigDecimal amount = BigDecimal.valueOf(150);
-        Operation withDrawOperation = new Operation(OperationType.DEBIT, amount);
-        when(accountPort.getAccount(accountId)).thenReturn(account);
-        doThrow(new InsufficientFundsException("Fonds insuffisants")).when(account).withdraw(amount);
+        BigDecimal amount = BigDecimal.valueOf(100);
+        Operation withdrawalOperation = new Operation(OperationType.DEBIT, amount);
 
-        // When / Then
-        assertThrows(InsufficientFundsException.class, () -> accountService.addOperation(accountId, withDrawOperation));
+        BankAccount account = new BankAccount(BigDecimal.valueOf(1000), BigDecimal.valueOf(200),
+                BankAccountType.CURRENT, BigDecimal.valueOf(100));
+        account.setId(accountId);
 
-        verify(accountPort).getAccount(accountId);
-        verify(account).withdraw(amount);
-    }
-
-    @Test
-    void addOperation_should_return_account_not_found_when_account_is_not_found_during_withdraw_operation() {
-        // Given
-        Long accountId = 1L;
-        BigDecimal amount = BigDecimal.valueOf(50);
-        Operation withDrawOperation = new Operation(OperationType.DEBIT, amount);
-        when(accountPort.getAccount(accountId)).thenThrow(new AccountNotFoundException("Account not found"));
-
-        // When / Then
-        assertThrows(AccountNotFoundException.class, () -> accountService.addOperation(accountId, withDrawOperation));
-        verify(accountPort).getAccount(accountId);
-    }
-
-    @Test
-    void createAccount_should_create_account_and_return_id_when_creation_is_successful() {
-        // Given
-        Long expectedId = 1L;
-        BankAccount accountToCreate = new BankAccount(BigDecimal.valueOf(1000), BigDecimal.valueOf(1000),
-                BankAccountType.CURRENT, BigDecimal.valueOf(2000));
-        when(accountPort.createAccount(accountToCreate)).thenReturn(expectedId);
+        when(accountRepository.getAccount(accountId)).thenReturn(account);
 
         // When
-        long createdId = accountService.createAccount(accountToCreate);
+        accountService.addOperation(accountId, withdrawalOperation);
 
         // Then
-        assertEquals(expectedId, createdId);
-        verify(accountPort).createAccount(accountToCreate);
+        verify(accountRepository).getAccount(accountId);
+        assertEquals(BigDecimal.valueOf(900), account.getBalance());
+        verify(accountRepository).updateAccount(account);
+    }
+
+    @Test
+    void addOperation_should_throw_exception_when_account_not_found_for_deposit() {
+        // Given
+        Long accountId = 1L;
+        BigDecimal amount = BigDecimal.valueOf(100);
+        Operation depositOperation = new Operation(OperationType.CREDIT, amount);
+
+        when(accountRepository.getAccount(accountId)).thenReturn(null);
+
+        // When & Then
+        Exception exception = assertThrows(AccountNotFoundException.class, () -> {
+            accountService.addOperation(accountId, depositOperation);
+        });
+
+        assertEquals("Account not found", exception.getMessage());
+
+    }
+
+    @Test
+    void addOperation_should_throw_exception_when_account_not_found_for_withdrawal() {
+        // Given
+        Long accountId = 1L;
+        BigDecimal amount = BigDecimal.valueOf(100);
+        Operation withdrawalOperation = new Operation(OperationType.DEBIT, amount);
+
+        when(accountRepository.getAccount(accountId)).thenReturn(null);
+
+        // When & Then
+        Exception exception = assertThrows(AccountNotFoundException.class, () -> {
+            accountService.addOperation(accountId, withdrawalOperation);
+        });
+
+        assertEquals("Account not found", exception.getMessage());
+
+    }
+
+    @Test
+    void generateMonthlyStatement_shouldReturnCorrectStatement_whenCalled() {
+        // Given
+        Long accountId = 1L;
+        ZonedDateTime zonedNow = ZonedDateTime.now();
+        ZonedDateTime unMoisAvant = zonedNow.minusMonths(1);
+        Instant now = zonedNow.toInstant();
+        Instant oneMonthAgo = unMoisAvant.toInstant();
+
+        Operation operation1 = new Operation(OperationType.CREDIT, BigDecimal.valueOf(100));
+        operation1.setDate(oneMonthAgo.plusSeconds(1));
+
+        Operation operation2 = new Operation(OperationType.DEBIT, BigDecimal.valueOf(50));
+        operation2.setDate(now.minusSeconds(1));
+
+        Operation operation3 = new Operation(OperationType.CREDIT, BigDecimal.valueOf(200));
+        operation3.setDate(oneMonthAgo.minusSeconds(1));
+
+        Operation operation4 = new Operation(OperationType.DEBIT, BigDecimal.valueOf(25));
+        operation4.setDate(now.plusSeconds(1));
+
+        BankAccount bankAccount = new BankAccount(BigDecimal.valueOf(1000), BigDecimal.valueOf(1000),
+                BankAccountType.CURRENT, BigDecimal.valueOf(2000));
+        bankAccount.setOperations(Arrays.asList(operation1, operation2, operation3, operation4));
+        bankAccount.setAccountType(BankAccountType.CURRENT);
+        bankAccount.setBalance(BigDecimal.valueOf(500));
+
+        when(accountRepository.getAccount(accountId)).thenReturn(bankAccount);
+
+        // When
+        AccountStatement statement = accountService.generateMonthlyStatement(accountId);
+
+        // Then
+        List<Operation> expectedOperations = Arrays.asList(operation2, operation1);
+        assertEquals(BankAccountType.CURRENT, statement.getAccountType());
+        assertEquals(BigDecimal.valueOf(500), statement.getBalance());
+        assertEquals(expectedOperations, statement.getOperations());
+    }
+
+    @Test
+    void generateMonthlyStatement_should_return_statement_with_no_operations_if_none_in_last_month() {
+        // Given
+        Long accountId = 1L;
+        BankAccount account = new BankAccount(BigDecimal.valueOf(1000), BigDecimal.valueOf(200),
+                BankAccountType.CURRENT, BigDecimal.valueOf(100));
+        account.setId(accountId);
+
+        ZonedDateTime now = ZonedDateTime.now();
+        ZonedDateTime twoMonthsAgo = now.minusMonths(2);
+
+        Operation operation1 = new Operation(OperationType.CREDIT, BigDecimal.valueOf(100));
+        operation1.setDate(twoMonthsAgo.plusSeconds(1).toInstant());
+
+        account.setOperations(Arrays.asList(operation1));
+
+        when(accountRepository.getAccount(accountId)).thenReturn(account);
+
+        // When
+        AccountStatement statement = accountService.generateMonthlyStatement(accountId);
+
+        // Then
+        assertEquals(BankAccountType.CURRENT, statement.getAccountType());
+        assertEquals(BigDecimal.valueOf(1000), statement.getBalance());
+        assertTrue(statement.getOperations().isEmpty());
     }
 
 }

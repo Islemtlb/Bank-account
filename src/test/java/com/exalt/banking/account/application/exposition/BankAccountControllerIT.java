@@ -12,7 +12,9 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 
 import com.exalt.banking.account.application.service.AccountApplicationService;
+import com.exalt.banking.account.domain.model.AccountStatement;
 import com.exalt.banking.account.domain.model.BankAccount;
+import com.exalt.banking.account.domain.model.BankAccountType;
 import com.exalt.banking.account.domain.model.OperationType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -152,25 +154,10 @@ class BankAccountControllerIT {
         @Test
         void createOperation_with_valid_Json_should_add_operation_to_account() throws IOException {
 
-                String accountJson = readJsonFile("src/test/resources/valid-bank-account-creation-request.json");
-                Long accountId = given()
-                                .contentType(ContentType.JSON)
-                                .body(accountJson)
-                                .when()
-                                .post("/accounts")
-                                .then()
-                                .statusCode(HttpStatus.CREATED.value())
-                                .extract()
-                                .response().as(Long.class);
+                Long accountId = createAnyCurrentAccount();
 
                 String operationJson = createSampleOperationJson(OperationType.CREDIT, new BigDecimal("100.00"));
-                given()
-                                .contentType(ContentType.JSON)
-                                .body(operationJson)
-                                .when()
-                                .post("/accounts/" + accountId + "/operations")
-                                .then()
-                                .statusCode(HttpStatus.CREATED.value());
+                createOperation(accountId, operationJson);
 
                 BankAccount createdAccount = service.getAccount(accountId);
                 assertEquals(1, createdAccount.getOperations().size());
@@ -263,6 +250,56 @@ class BankAccountControllerIT {
                                 .statusCode(HttpStatus.BAD_REQUEST.value())
                                 .body("overdraftLimit", equalTo(
                                                 "Le plafond de découvert est requis et doit être supérieur à 0 pour créer un compte COURANT"));
+        }
+
+        @Test
+        void getMonthlyStatement_should_return_correct_statement() throws IOException {
+                // Given
+                Long accountId = createAnyCurrentAccount();
+                createOperation(accountId, createSampleOperationJson(OperationType.CREDIT, new BigDecimal("100.00")));
+                createOperation(accountId, createSampleOperationJson(OperationType.DEBIT, new BigDecimal("50.00")));
+
+                // When
+                AccountStatement statement = given()
+                                .when()
+                                .get("/accounts/" + accountId + "/statement")
+                                .then()
+                                .statusCode(HttpStatus.OK.value())
+                                .extract()
+                                .response().as(AccountStatement.class);
+
+                // Then
+                assertEquals(BankAccountType.CURRENT, statement.getAccountType());
+                assertEquals(new BigDecimal("50.00").setScale(2), statement.getBalance().setScale(2));
+                assertEquals(2, statement.getOperations().size());
+                assertEquals(new BigDecimal("50.00").setScale(2),
+                                statement.getOperations().get(0).getAmount().setScale(2));
+                assertEquals(new BigDecimal("100.00").setScale(2),
+                                statement.getOperations().get(1).getAmount().setScale(2));
+        }
+
+        private void createOperation(Long accountId, String operationJson1) {
+                given()
+                                .contentType(ContentType.JSON)
+                                .body(operationJson1)
+                                .when()
+                                .post("/accounts/" + accountId + "/operations")
+                                .then()
+                                .statusCode(HttpStatus.CREATED.value());
+        }
+
+        private Long createAnyCurrentAccount() throws IOException {
+                String validJson = readJsonFile("src/test/resources/valid-bank-account-creation-request.json");
+                Long accountId = given()
+                                .contentType(ContentType.JSON)
+                                .body(validJson)
+                                .when()
+                                .post("/accounts")
+                                .then()
+                                .statusCode(HttpStatus.CREATED.value())
+                                .extract()
+                                .response().as(Long.class);
+                return accountId;
         }
 
         private BigDecimal getExpectedBigDecimalFromJson(String json, String key)

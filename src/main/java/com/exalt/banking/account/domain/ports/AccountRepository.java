@@ -1,7 +1,6 @@
 package com.exalt.banking.account.domain.ports;
 
 import com.exalt.banking.account.domain.model.BankAccount;
-import com.exalt.banking.account.domain.model.Operation;
 
 public interface AccountRepository {
 
@@ -9,5 +8,5 @@ public interface AccountRepository {
 
     long createAccount(BankAccount bankAccount);
 
-    void updateAccount(BankAccount account, Operation operation);
+    void updateAccount(BankAccount account);
 }

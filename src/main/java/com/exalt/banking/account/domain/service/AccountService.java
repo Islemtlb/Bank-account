@@ -1,5 +1,6 @@
 package com.exalt.banking.account.domain.service;
 
+import com.exalt.banking.account.domain.model.AccountStatement;
 import com.exalt.banking.account.domain.model.BankAccount;
 import com.exalt.banking.account.domain.model.Operation;
 
@@ -10,5 +11,7 @@ public interface AccountService {
     long createAccount(BankAccount bankAccount);
 
     BankAccount getAccount(long id);
+
+    public AccountStatement generateMonthlyStatement(Long accountId);
 
 }
