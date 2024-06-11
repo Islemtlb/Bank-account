@@ -1,0 +1,7 @@
+{
+    "balance": 1000.0,
+    "overdraftLimit": -5,
+    "accountType": "CURRENT",
+    "savingsDepositLimit": 1000.0
+  }
+  

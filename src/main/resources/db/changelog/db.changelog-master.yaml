@@ -1,0 +1,82 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: islem
+      changes:
+        - createTable:
+            tableName: bank_account
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: balance
+                  type: decimal(19, 2)
+              - column:
+                  name: overdraft_limit
+                  type: decimal(19, 2)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: account_type
+                  type: varchar(255) 
+              - column:
+                  name: savings_deposit_limit
+                  type: decimal(19, 2)
+                  constraints:
+                    nullable: true
+                   
+              - column:
+                  name: version
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    defaultValue: 0
+  - changeSet:
+      id: 2
+      author: islem
+      changes:
+        - createTable:
+            tableName: operation
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: type
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: decimal(19, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    defaultValue: 0
+              - column:
+                  name: date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: operation
+            baseColumnNames: account_id
+            constraintName: fk_operation_account
+            referencedTableName: bank_account
+            referencedColumnNames: id
